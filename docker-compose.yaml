@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  db_olist:
+    image: postgres:alpine3.18
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5    
+    expose:
+      -  "5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=pw1234
+      - POSTGRES_DB=olist
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      # copy the sql script to create tables
+      - ./scripts/sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+  populate_db:
+    build: .
+    restart: "no"
+    command: python -m populate_db
+    volumes:
+      - .:/code
+    depends_on:
+      db_olist:
+        condition: service_healthy
